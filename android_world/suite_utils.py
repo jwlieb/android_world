@@ -25,10 +25,12 @@ import traceback
 from typing import Any, Callable, Type, TypeVar
 
 from android_env import env_interface
+from android_world import benchmark
 from android_world import checkpointer as checkpointer_lib
 from android_world import constants
 from android_world import episode_runner
 from android_world.agents import base_agent
+from android_world.agents import llm_usage
 from android_world.env import adb_utils
 from android_world.env import interface
 from android_world.task_evals import task_eval
@@ -241,11 +243,20 @@ def _run_task(
     ValueError: If step data was not as expected.
   """
   start = time.time()
+  tracker = llm_usage.get_tracker()
+  tracker.reset()
+  timings: dict[str, float] = {}
+  max_steps = _allocate_step_budget(task.complexity)
   try:
     task.initialize_task(env)
+    timings['init_s'] = time.time() - start
     _log_and_print('Running task %s with goal "%s"', task.name, task.goal)
+    episode_start = time.time()
     interaction_results = run_episode(task)
+    timings['episode_s'] = time.time() - episode_start
+    eval_start = time.time()
     task_successful = task.is_successful(env)
+    timings['eval_s'] = time.time() - eval_start
   except Exception as e:  # pylint: disable=broad-exception-caught
     _log_and_print('%s\nSKIPPING %s.', '~' * 80, task.name)
     logging.exception(
@@ -254,9 +265,16 @@ def _run_task(
         e,
     )
     traceback.print_exc()
-    return _create_failed_result(
+    failed_result = _create_failed_result(
         task.name, task.goal, traceback.format_exc(), time.time() - start
     )
+    failed_result[constants.EpisodeConstants.SEED] = task.params.get(
+        constants.EpisodeConstants.SEED
+    )
+    failed_result[constants.EpisodeConstants.BENCHMARK_METRICS] = (
+        benchmark.task_metrics(tracker, timings, max_steps, agent_done=None)
+    )
+    return failed_result
   else:
     agent_successful = task_successful if interaction_results.done else 0.0
     _log_and_print(
@@ -284,6 +302,12 @@ def _run_task(
         constants.EpisodeConstants.SEED: task.params[
             constants.EpisodeConstants.SEED
         ],
+        constants.EpisodeConstants.BENCHMARK_METRICS: benchmark.task_metrics(
+            tracker,
+            timings,
+            max_steps,
+            agent_done=bool(interaction_results.done),
+        ),
     }
     task.tear_down(env)
     return result
@@ -326,6 +350,7 @@ def _run_task_suite(
     return_full_episode_data: bool = False,
     process_episodes_fn=None,
     check_episode_fn: Callable[[dict[str, Any]], bool] | None = None,
+    benchmark_writer: benchmark.BenchmarkWriter | None = None,
 ) -> list[dict[str, Any]]:
   """Runs e2e system on suite.
 
@@ -341,6 +366,8 @@ def _run_task_suite(
     process_episodes_fn: The function to process episode data. Usually to
       compute metrics. Deafaults to process_episodes from this file.
     check_episode_fn: The function to check episode data.
+    benchmark_writer: If given, receives every finished episode and writes
+      per-task token, timing and success metrics.
 
   Returns:
     Metadata for each episode, including the scripted reward.
@@ -401,6 +428,8 @@ def _run_task_suite(
       episode[constants.EpisodeConstants.AGENT_NAME] = agent_name
       episode[constants.EpisodeConstants.INSTANCE_ID] = i
       checkpointer.save_episodes([episode], instance_name)
+      if benchmark_writer is not None:
+        benchmark_writer.add_episode(episode)
 
       if return_full_episode_data:
         full_episode_data.append(episode)
@@ -428,6 +457,7 @@ def run(
     return_full_episode_data: bool = False,
     process_episodes_fn=None,
     check_episode_fn: Callable[[dict[str, Any]], bool] | None = None,
+    benchmark_writer: benchmark.BenchmarkWriter | None = None,
 ) -> list[dict[str, Any]]:
   """Create suite and runs eval suite.
 
@@ -445,6 +475,8 @@ def run(
     process_episodes_fn: The function to process episode data. Usually to
       compute metrics. Deafaults to process_episodes from this file.
     check_episode_fn: The function to check episode data.
+    benchmark_writer: If given, writes per-task token, timing and success
+      metrics to the run directory.
 
   Returns:
     Step-by-step data from each episode.
@@ -483,6 +515,7 @@ def run(
       return_full_episode_data=return_full_episode_data,
       process_episodes_fn=process_episodes_fn,
       check_episode_fn=check_episode_fn,
+      benchmark_writer=benchmark_writer,
   )
 
   return results

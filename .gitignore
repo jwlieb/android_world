@@ -23,3 +23,6 @@ poetry.lock
 
 # PyCharm
 .idea
+
+# Local shell env with API keys; never commit.
+.bashrc

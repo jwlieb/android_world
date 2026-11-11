@@ -23,9 +23,11 @@ import io
 import os
 import re
 import string
+import time
 from typing import Any
 from absl import logging
 from android_world.agents import infer
+from android_world.agents import llm_usage
 from android_world.env import json_action
 from android_world.env import representation_utils
 from IPython import display
@@ -323,13 +325,21 @@ def execute_openai_request(
       "max_tokens": max_tokens,
   }
 
+  start = time.time()
   response = requests.post(
       "https://api.openai.com/v1/chat/completions",
       headers=headers,
       json=payload,
   )
+  response_json = response.json()
+  llm_usage.get_tracker().record(
+      model,
+      latency_s=time.time() - start,
+      success=response.ok and "choices" in response_json,
+      **llm_usage.openai_usage(response_json),
+  )
 
-  return response.json()
+  return response_json
 
 
 @dataclasses.dataclass(frozen=True)

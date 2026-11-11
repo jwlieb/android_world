@@ -49,5 +49,7 @@ class EpisodeConstants:
   SCREEN_CONFIG = 'screen_config'
   EXCEPTION_INFO = 'exception_info'
   FINISH_DTIME = 'finish_dtime'
+  # Token usage, timing and step metrics; see android_world/benchmark.py.
+  BENCHMARK_METRICS = 'benchmark_metrics'
   SEED = 'seed'
   AUX_DATA = 'aux_data'

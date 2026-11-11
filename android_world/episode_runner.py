@@ -15,9 +15,11 @@
 """Runs an agent on the environment."""
 
 import dataclasses
+import time
 from typing import Any, Callable, Optional
 from android_world import constants
 from android_world.agents import base_agent
+from android_world.agents import llm_usage
 from android_world.env import interface
 import termcolor
 
@@ -77,8 +79,13 @@ def run_episode(
   agent.set_max_steps(max_n_steps)
 
   output = []
+  tracker = llm_usage.get_tracker()
   for step_n in range(max_n_steps):
+    tracker.set_step(step_n)
+    step_start = time.time()
     result = agent.step(goal)
+    tracker.record_step_time(step_n, time.time() - step_start)
+    tracker.set_step(None)
     print_fn('Completed step {:d}.'.format(step_n + 1))
     assert constants.STEP_NUMBER not in result.data
     output.append(result.data | {constants.STEP_NUMBER: step_n})

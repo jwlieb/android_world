@@ -1,0 +1,23 @@
+# 10-task benchmark subset for token-usage optimization.
+# Use with: python run.py --task_list_file=benchmarks/subset_10.txt ...
+# Picked for: a spread of difficulty, different apps, modest step counts
+# (cost), and screens with long UI element lists or several steps, where most
+# input tokens come from (screenshots, UI element list, action history).
+
+# Easy
+ContactsAddContact            # 5 steps, data entry. Already passes; reference task.
+SystemWifiTurnOff             # 3 steps, settings toggle. Checks simple tasks don't break.
+ExpenseDeleteSingle           # 3 steps, reading a list screen.
+MarkorCreateFolder            # 4 steps, text entry in a file manager-style app.
+
+# Medium
+SimpleSmsSend                 # 6 steps, compose and send.
+TasksHighPriorityTasksDueOnDate  # 5 steps, reads a list and answers a question.
+ExpenseDeleteDuplicates       # 6 steps, compares list items before deleting.
+MarkorCreateNote              # 8 steps, longer text entry; history grows.
+
+FilesDeleteFile               # 4 steps, file list screen. Replaced hard task MarkorCreateNoteAndSms.
+SimpleCalendarDeleteEventsOnRelativeDay  # 6 steps, calendar list + date reasoning. Replaced hard task SportsTrackerTotalDurationForCategoryThisWeek.
+
+# No hard tasks: both hard tasks we tried failed on every repeat, so they could
+# not show whether an optimization keeps results the same.
