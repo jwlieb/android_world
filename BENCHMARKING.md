@@ -460,8 +460,14 @@ python -m pytest -q -p no:warnings \
   android_world/benchmark_test.py android_world/agents/infer_test.py \
   android_world/suite_utils_test.py android_world/episode_runner_test.py \
   android_world/agents/m3a_test.py android_world/agents/t3a_test.py \
-  android_world/checkpointer_test.py
+  android_world/agents/screen_diff_test.py android_world/checkpointer_test.py
 ```
+
+Two tests in the full `android_world` suite fail independently of this work:
+- `env/interface_test.py::test_ui_stability_false_due_to_timeout` also
+  fails on the original upstream code.
+- `task_evals/utils/receipt_generator_test.py::test_create_receipt` uses
+  random data and fails occasionally.
 
 Run these after changing the agent or the benchmarking code, before spending
 money on a benchmark run.
