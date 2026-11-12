@@ -136,9 +136,14 @@ def main() -> None:
     dirty = ' (uncommitted changes)' if git.get('dirty') else ''
     # Runs from before these options existed had them off.
     options = [
-        name for name in ('m3a_compact_elements', 'm3a_lean_summary')
+        name
+        for name in (
+            'm3a_compact_elements', 'm3a_lean_summary', 'm3a_merged_summary'
+        )
         if cfg.get(name)
     ]
+    if cfg.get('m3a_history_window'):
+      options.append(f'm3a_history_window={cfg["m3a_history_window"]}')
     print(
         f'{label:8s}: {run_dir}\n          agent={cfg.get("agent_name")}'
         f' model={cfg.get("model")} seed={cfg.get("llm_seed")}'

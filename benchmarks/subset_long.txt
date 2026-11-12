@@ -1,0 +1,8 @@
+# Two simple but long tasks, to show how token savings hold up on long
+# episodes (the step history grows with every step).
+# Use with: python run.py --task_list_file=benchmarks/subset_long.txt ...
+# Both are repetitive data entry in apps that work on this emulator, with a
+# 60-step budget (complexity 6).
+
+ExpenseAddMultiple        # medium, 20 optimal steps: add 3 expenses.
+RecipeAddMultipleRecipes  # medium, 34 optimal steps: add 3 recipes.

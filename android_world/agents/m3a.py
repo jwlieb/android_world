@@ -14,8 +14,11 @@
 
 """A Multimodal Autonomous Agent for Android (M3A)."""
 
+import itertools
 import json
+import re
 import time
+from typing import Any
 
 from absl import logging
 from android_world.agents import agent_utils
@@ -168,6 +171,40 @@ ACTION_SELECTION_PROMPT_TEMPLATE = (
     ' following the reason why you do that. Your answer should look like:\n'
     'Reason: ...\nAction: {{"action_type":...}}\n\n'
     'Your Answer:\n'
+)
+
+_ACTION_ANSWER_INSTRUCTION = (
+    '\nNow output an action from the above list in the correct JSON format,'
+    ' following the reason why you do that. Your answer should look like:\n'
+    'Reason: ...\nAction: {{"action_type":...}}\n\n'
+    'Your Answer:\n'
+)
+assert ACTION_SELECTION_PROMPT_TEMPLATE.endswith(_ACTION_ANSWER_INSTRUCTION)
+
+# With merged_summary, the action call also summarizes the previous step, so
+# no separate summary call is needed.
+MERGED_SUMMARY_INSTRUCTION = (
+    '\nThe last step in the history above has not been summarized yet; the'
+    ' current screenshot shows the screen after that action. First write a'
+    ' summary of that step: what you intended, whether it worked as expected,'
+    ' if not what might be the reason (be critical, the action/reason might'
+    ' be wrong), and anything worth remembering for later steps. Keep it'
+    ' short (better less than 50 words) and in a single line. Then output the'
+    ' next action from the above list in the correct JSON format, following'
+    ' the reason why you do that. Your answer should look like:\n'
+    'Summary: ...\nReason: ...\nAction: {{"action_type":...}}\n\n'
+    'Your Answer:\n'
+)
+
+MERGED_ACTION_SELECTION_PROMPT_TEMPLATE = (
+    ACTION_SELECTION_PROMPT_TEMPLATE[: -len(_ACTION_ANSWER_INSTRUCTION)]
+    + MERGED_SUMMARY_INSTRUCTION
+)
+
+# With history_window, steps older than the window show only their action.
+CONDENSED_HISTORY_NOTE = (
+    '(Older steps are shortened to the action taken; the most recent steps'
+    ' have full summaries.)'
 )
 
 
@@ -392,6 +429,7 @@ def _action_selection_prompt(
     ui_elements: str,
     additional_guidelines: list[str] | None = None,
     elements_note: str = '',
+    summarize_last: bool = False,
 ) -> str:
   """Generate the prompt for the action selection.
 
@@ -415,7 +453,12 @@ def _action_selection_prompt(
     for guideline in additional_guidelines:
       extra_guidelines += f'- {guideline}\n'
 
-  return ACTION_SELECTION_PROMPT_TEMPLATE.format(
+  template = (
+      MERGED_ACTION_SELECTION_PROMPT_TEMPLATE
+      if summarize_last
+      else ACTION_SELECTION_PROMPT_TEMPLATE
+  )
+  return template.format(
       goal=goal,
       history=history,
       ui_elements=(
@@ -451,6 +494,52 @@ def _summarize_prompt(
       action=action,
       reason=reason,
   )
+
+
+def _history_lines(history: list[dict[str, Any]], window: int) -> list[str]:
+  """History lines for the action prompt.
+
+  With window > 0, only the last `window` steps keep their full summary;
+  older steps show just the action taken, and runs of the same action are
+  collapsed into one line. This bounds how fast the prompt grows on long
+  episodes.
+  """
+  if not window or len(history) <= window:
+    return [
+        f'Step {i + 1}- {step["summary"]}' for i, step in enumerate(history)
+    ]
+  cut = len(history) - window
+  condensed = [
+      step.get('action') or '(no action performed)' for step in history[:cut]
+  ]
+  lines = [CONDENSED_HISTORY_NOTE]
+  start = 0
+  for action, group in itertools.groupby(condensed):
+    count = len(list(group))
+    if count == 1:
+      lines.append(f'Step {start + 1}- {action}')
+    else:
+      lines.append(f'Steps {start + 1}-{start + count}- {action} (x{count})')
+    start += count
+  lines += [
+      f'Step {cut + i + 1}- {step["summary"]}'
+      for i, step in enumerate(history[cut:])
+  ]
+  return lines
+
+
+def _parse_summary(output: str) -> str | None:
+  """The `Summary:` part of a merged action output, as one line."""
+  match = re.search(
+      r'Summary:(.*?)(Reason:|Action:|$)', output, flags=re.DOTALL
+  )
+  if not match:
+    return None
+  text = match.group(1)
+  if not match.group(2):
+    # No Reason/Action follows (malformed output): keep only the first line.
+    text = text.strip().split('\n', 1)[0]
+  return ' '.join(text.split()) or None
 
 
 def _describe_changed_elements(
@@ -494,6 +583,8 @@ class M3A(base_agent.EnvironmentInteractingAgent):
       wait_after_action_seconds: float = 2.0,
       compact_ui_elements: bool = False,
       lean_summary: bool = False,
+      merged_summary: bool = False,
+      history_window: int = 0,
   ):
     """Initializes a M3A Agent.
 
@@ -508,11 +599,23 @@ class M3A(base_agent.EnvironmentInteractingAgent):
       lean_summary: Make the summary call cheaper: skip it when the screen is
         unchanged, and otherwise send only the UI elements that changed,
         without the action-space prefix.
+      merged_summary: Drop the separate summary call; the next action call
+        summarizes the previous step (one LLM call per step). Replaces
+        lean_summary, so the two cannot be combined.
+      history_window: If > 0, only the last this-many steps keep their full
+        summary in the action prompt; older steps show just their action.
     """
+    if merged_summary and lean_summary:
+      raise ValueError(
+          'merged_summary removes the summary call, so lean_summary does not'
+          ' apply; enable only one of them.'
+      )
     super().__init__(env, name)
     self.llm = llm
     self.compact_ui_elements = compact_ui_elements
     self.lean_summary = lean_summary
+    self.merged_summary = merged_summary
+    self.history_window = history_window
     self._elements_note = COMPACT_ELEMENTS_NOTE if compact_ui_elements else ''
     self.history = []
     self.additional_guidelines = None
@@ -542,6 +645,8 @@ class M3A(base_agent.EnvironmentInteractingAgent):
         'summary': None,
         'summary_raw_response': None,
         'summary_skipped': False,
+        'summary_pending': False,
+        'action': None,
     }
     logging.info('----------step %s----------', str(len(self.history) + 1))
 
@@ -572,15 +677,18 @@ class M3A(base_agent.EnvironmentInteractingAgent):
         )
     step_data['before_screenshot_with_som'] = before_screenshot.copy()  # pyrefly: ignore[bad-assignment]
 
+    summarize_last = bool(
+        self.merged_summary
+        and self.history
+        and self.history[-1].get('summary_pending')
+    )
     action_prompt = _action_selection_prompt(
         goal,
-        [
-            'Step ' + str(i + 1) + '- ' + step_info['summary']
-            for i, step_info in enumerate(self.history)
-        ],
+        _history_lines(self.history, self.history_window),
         before_ui_elements_list,
         self.additional_guidelines,
         self._elements_note,
+        summarize_last,
     )
     step_data['action_prompt'] = action_prompt  # pyrefly: ignore[bad-assignment]
     action_output, is_safe, raw_response = self.llm.predict_mm(
@@ -600,6 +708,13 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
       raise RuntimeError('Error calling LLM in action selection phase.')
     step_data['action_output'] = action_output  # pyrefly: ignore[bad-assignment]
     step_data['action_raw_response'] = raw_response
+
+    if summarize_last:
+      previous = self.history[-1]
+      summary = _parse_summary(action_output)
+      if summary:
+        previous['summary'] = f'{previous["summary"]} {summary}'
+      previous['summary_pending'] = False
 
     reason, action = m3a_utils.parse_reason_action_output(action_output)
 
@@ -622,6 +737,7 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
     logging.info('Action: %s', action)
     logging.info('Reason: %s', reason)
     step_data['action_reason'] = reason  # pyrefly: ignore[bad-assignment]
+    step_data['action'] = action  # pyrefly: ignore[bad-assignment]
 
     try:
       converted_action = json_action.JSONAction(
@@ -705,6 +821,13 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
       )
 
     time.sleep(self.wait_after_action_seconds)
+
+    if self.merged_summary:
+      # The next action call summarizes this step from its screenshot.
+      step_data['summary'] = f'Action selected: {action}.'  # pyrefly: ignore[bad-assignment]
+      step_data['summary_pending'] = True  # pyrefly: ignore[bad-assignment]
+      self.history.append(step_data)
+      return base_agent.AgentInteractionResult(False, step_data)
 
     state = self.env.get_state(wait_to_stabilize=False)
     logical_screen_size = self.env.logical_screen_size

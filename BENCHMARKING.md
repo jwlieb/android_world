@@ -222,8 +222,10 @@ Flags added in this fork:
 | `--price_input_per_mtok`, `--price_output_per_mtok`, `--price_cached_input_per_mtok` | unset | If input and output prices are set, adds estimated USD cost columns |
 | `--m3a_compact_elements` | off | M3A token reduction #1, see §9.1 |
 | `--m3a_lean_summary` | off | M3A token reduction #2, see §9.1 |
+| `--m3a_merged_summary` | off | M3A token reduction #3 (one call per step), see §9.1 |
+| `--m3a_history_window` | `0` | M3A history compression, see §9.1; `0` = full history |
 
-With both M3A options off (the default), the prompts are byte-for-byte the
+With all M3A options off (the default), the prompts are byte-for-byte the
 ones the baseline used.
 
 To benchmark a modified agent, either change M3A in place or add a new agent
@@ -424,11 +426,27 @@ Each option can be benchmarked alone or combined. Both are off by default.
 descriptive `--checkpoint_dir`, for example `m3a_compact`, `m3a_lean`, or
 `m3a_compact_lean`.
 
+**#3 `--m3a_merged_summary`** (`m3a.py`: `MERGED_SUMMARY_INSTRUCTION`,
+`_parse_summary`). There is no separate summary call.
+- After an action runs, the history gets a placeholder (`Action selected:
+  {...}.`) and the step is marked `summary_pending`.
+- The next action call sees the screen after that action. It is asked to
+  answer `Summary: ...` / `Reason: ...` / `Action: ...`, and the summary is
+  appended to the previous step's history entry.
+- If the model leaves out the summary, the placeholder stays.
+- Gemini is called once per step instead of twice.
+- It replaces #2, so `--m3a_lean_summary` cannot be combined with it (#1 can).
+
+**History compression `--m3a_history_window=N`** (`_history_lines`).
+- Only the last N steps keep their full summary. Older steps show just the
+  action JSON they took, and runs of the same action collapse into one line,
+  e.g. `Steps 4-6- {"action_type": "scroll", ...} (x3)`.
+- It only matters once an episode runs longer than N steps. Use it on the
+  long tasks (`benchmarks/subset_long.txt`) with `--m3a_history_window=5`.
+
 Not yet implemented:
-- merging the summary into the next action call (one call per step)
 - dropping the duplicate raw screenshot
 - downscaling screenshots
-- capping the history
 
 ---
 

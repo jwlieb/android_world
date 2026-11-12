@@ -390,5 +390,182 @@ class M3AFlagsTest(absltest.TestCase):
     self.assertIn('None', disappeared.split('\n')[1])
 
 
+_CLICK = 'Reason: tap.\nAction: {"action_type": "click", "index": 0}'
+_DONE = (
+    'Reason: done.\nAction: {"action_type": "status", "goal_status":'
+    ' "complete"}'
+)
+
+
+class MergedSummaryTest(absltest.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    mock.patch.object(adb_utils, 'get_orientation', return_value=0).start()
+    mock.patch.object(
+        adb_utils, 'get_physical_frame_boundary', return_value=[0, 0, 100, 100]
+    ).start()
+    self.addCleanup(mock.patch.stopall)
+    self.env = test_utils.FakeAsyncEnv()
+    state = interface.State(
+        pixels=np.zeros((100, 100, 3), dtype=np.uint8),
+        forest=None,
+        ui_elements=[_element(text='Save', is_clickable=True)],
+    )
+    mock.patch.object(self.env, 'get_state', return_value=state).start()
+
+  def _agent(self, responses, **kwargs):
+    self.llm = MockMultimodalLlmWrapper([(r, 'raw') for r in responses])
+    return m3a.M3A(
+        self.env, self.llm, merged_summary=True, wait_after_action_seconds=0,
+        **kwargs,
+    )
+
+  def test_one_llm_call_per_step_and_placeholder_summary(self):
+    agent = self._agent([_CLICK])
+    result = agent.step('goal')
+    self.assertLen(self.llm.prompts, 1)
+    self.assertFalse(result.done)
+    self.assertEqual(
+        agent.history[-1]['summary'],
+        'Action selected: {"action_type": "click", "index": 0}.',
+    )
+    self.assertTrue(agent.history[-1]['summary_pending'])
+
+  def test_first_step_prompt_has_no_summary_request(self):
+    agent = self._agent([_CLICK])
+    agent.step('goal')
+    self.assertNotIn('Summary:', self.llm.prompts[0])
+    self.assertEqual(
+        self.llm.prompts[0],
+        m3a._action_selection_prompt(
+            'goal', [], m3a._generate_ui_elements_description_list(
+                self.env.get_state().ui_elements, (100, 100)
+            ),
+        ),
+    )
+
+  def test_next_call_summarizes_previous_step(self):
+    agent = self._agent([_CLICK, 'Summary: Tapped Save; it worked.\n' + _DONE])
+    agent.step('goal')
+    result = agent.step('goal')
+    self.assertLen(self.llm.prompts, 2)
+    self.assertIn(m3a.MERGED_SUMMARY_INSTRUCTION[:60], self.llm.prompts[1])
+    self.assertIn('Summary: ...\nReason: ...\nAction:', self.llm.prompts[1])
+    self.assertEqual(
+        agent.history[0]['summary'],
+        'Action selected: {"action_type": "click", "index": 0}.'
+        ' Tapped Save; it worked.',
+    )
+    self.assertFalse(agent.history[0]['summary_pending'])
+    self.assertTrue(result.done)
+
+  def test_missing_summary_keeps_placeholder(self):
+    agent = self._agent([_CLICK, _DONE])
+    agent.step('goal')
+    agent.step('goal')
+    self.assertEqual(
+        agent.history[0]['summary'],
+        'Action selected: {"action_type": "click", "index": 0}.',
+    )
+    self.assertFalse(agent.history[0]['summary_pending'])
+
+  def test_multiline_summary_is_joined(self):
+    agent = self._agent([_CLICK, 'Summary: line one\nline two\n' + _DONE])
+    agent.step('goal')
+    agent.step('goal')
+    self.assertTrue(
+        agent.history[0]['summary'].endswith(' line one line two')
+    )
+
+  def test_summary_applied_even_if_action_invalid(self):
+    agent = self._agent([_CLICK, 'Summary: It worked.\nno action here'])
+    agent.step('goal')
+    agent.step('goal')
+    self.assertTrue(agent.history[0]['summary'].endswith(' It worked.'))
+    self.assertIn('not in the correct format', agent.history[1]['summary'])
+
+  def test_merged_and_lean_together_is_an_error(self):
+    with self.assertRaises(ValueError):
+      self._agent([], lean_summary=True)
+
+
+class HistoryWindowTest(absltest.TestCase):
+
+  def _history(self, actions):
+    return [
+        {'summary': f'Action selected: {a}. Long summary {i}.', 'action': a}
+        for i, a in enumerate(actions)
+    ]
+
+  def test_window_zero_keeps_full_history(self):
+    history = self._history(['a1', 'a2'])
+    self.assertEqual(
+        m3a._history_lines(history, 0),
+        ['Step 1- Action selected: a1. Long summary 0.',
+         'Step 2- Action selected: a2. Long summary 1.'],
+    )
+
+  def test_short_history_unchanged(self):
+    history = self._history(['a1', 'a2'])
+    self.assertEqual(
+        m3a._history_lines(history, 3), m3a._history_lines(history, 0)
+    )
+
+  def test_older_steps_condensed_to_actions(self):
+    history = self._history(['a1', 'a2', 'a3', 'a4'])
+    self.assertEqual(
+        m3a._history_lines(history, 2),
+        [m3a.CONDENSED_HISTORY_NOTE,
+         'Step 1- a1',
+         'Step 2- a2',
+         'Step 3- Action selected: a3. Long summary 2.',
+         'Step 4- Action selected: a4. Long summary 3.'],
+    )
+
+  def test_repeated_old_actions_are_collapsed(self):
+    history = self._history(['s', 's', 's', 'x', 'a5'])
+    self.assertEqual(
+        m3a._history_lines(history, 1)[1:],
+        ['Steps 1-3- s (x3)',
+         'Step 4- x',
+         'Step 5- Action selected: a5. Long summary 4.'],
+    )
+
+  def test_old_step_without_action_is_marked(self):
+    history = [{'summary': 'Output was not in the correct format.'}]
+    history += self._history(['a2'])
+    self.assertEqual(
+        m3a._history_lines(history, 1)[1], 'Step 1- (no action performed)'
+    )
+
+  def test_agent_uses_window(self):
+    mock.patch.object(adb_utils, 'get_orientation', return_value=0).start()
+    mock.patch.object(
+        adb_utils, 'get_physical_frame_boundary', return_value=[0, 0, 100, 100]
+    ).start()
+    self.addCleanup(mock.patch.stopall)
+    env = test_utils.FakeAsyncEnv()
+    state = interface.State(
+        pixels=np.zeros((100, 100, 3), dtype=np.uint8),
+        forest=None,
+        ui_elements=[_element(text='Save', is_clickable=True)],
+    )
+    mock.patch.object(env, 'get_state', return_value=state).start()
+    llm = MockMultimodalLlmWrapper([(_CLICK, 'raw'), ('sum', 'raw')] * 3)
+    agent = m3a.M3A(env, llm, history_window=1, wait_after_action_seconds=0)
+    for _ in range(3):
+      agent.step('goal')
+    self.assertEqual(
+        agent.history[0]['action'], '{"action_type": "click", "index": 0}'
+    )
+    last_prompt = llm.prompts[-2]  # Action prompt of step 3.
+    self.assertIn(m3a.CONDENSED_HISTORY_NOTE, last_prompt)
+    self.assertIn(
+        'Step 1- {"action_type": "click", "index": 0}\n', last_prompt
+    )
+    self.assertIn('Step 2- Action selected:', last_prompt)
+
+
 if __name__ == '__main__':
   absltest.main()

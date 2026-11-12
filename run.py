@@ -173,6 +173,19 @@ _M3A_LEAN_SUMMARY = flags.DEFINE_boolean(
     'M3A: skip the summary call when the screen is unchanged and otherwise'
     ' send only the UI elements that changed, without the action prefix.',
 )
+_M3A_MERGED_SUMMARY = flags.DEFINE_boolean(
+    'm3a_merged_summary',
+    False,
+    'M3A: drop the separate summary call; the next action call summarizes the'
+    ' previous step (one LLM call per step). Cannot be combined with'
+    ' --m3a_lean_summary.',
+)
+_M3A_HISTORY_WINDOW = flags.DEFINE_integer(
+    'm3a_history_window',
+    0,
+    'M3A: if > 0, only the last N steps keep their full summary in the action'
+    ' prompt; older steps show just their action. 0 keeps the full history.',
+)
 
 # Benchmarking.
 _TASK_LIST_FILE = flags.DEFINE_string(
@@ -263,6 +276,8 @@ def _run_config(agent: base_agent.EnvironmentInteractingAgent) -> dict:
       'thinking_level': getattr(llm, 'thinking_level', None),
       'm3a_compact_elements': _M3A_COMPACT_ELEMENTS.value,
       'm3a_lean_summary': _M3A_LEAN_SUMMARY.value,
+      'm3a_merged_summary': _M3A_MERGED_SUMMARY.value,
+      'm3a_history_window': _M3A_HISTORY_WINDOW.value,
       'suite_family': _SUITE_FAMILY.value,
       'tasks': _task_names(),
       'task_list_file': _TASK_LIST_FILE.value,
@@ -278,6 +293,8 @@ def _m3a_options() -> dict[str, bool]:
   return {
       'compact_ui_elements': _M3A_COMPACT_ELEMENTS.value,
       'lean_summary': _M3A_LEAN_SUMMARY.value,
+      'merged_summary': _M3A_MERGED_SUMMARY.value,
+      'history_window': _M3A_HISTORY_WINDOW.value,
   }
 
 
