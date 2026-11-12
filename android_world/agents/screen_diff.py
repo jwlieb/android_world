@@ -40,9 +40,15 @@ UIElement = representation_utils.UIElement
 
 # A pixel counts as changed when any channel moves by more than this.
 PIXEL_CHANNEL_THRESHOLD = 8
-# Screens whose changed-pixel fraction is below this count as unchanged.
-# Leaves room for the status-bar clock and blinking cursors.
-MAX_CHANGED_PIXEL_FRACTION = 0.01
+# Top rows ignored when comparing pixels: the status bar (clock, signal and
+# notification icons) changes on its own. On a 1080x2400 Pixel 6 the status
+# bar is ~5% of the height.
+STATUS_BAR_FRACTION = 0.06
+# Below the status bar, screens whose changed-pixel fraction is under this
+# count as unchanged. 0.1% of 1080x2400 is ~2.6k px (about 50x50): room for a
+# blinking cursor, while a drawn stroke or a toggled checkbox icon that the
+# accessibility tree misses still counts as a change.
+MAX_CHANGED_PIXEL_FRACTION = 0.001
 
 # Content that identifies an element. Position (bbox) is deliberately left
 # out so an element that moves, e.g. after a scroll, is still the same element.
@@ -169,8 +175,10 @@ def diff(
 
 
 def _changed_pixel_fraction(before: np.ndarray, after: np.ndarray) -> float:
-  if before.shape != after.shape:
+  if before.shape != after.shape or before.ndim != 3:
     return 1.0
+  top = int(np.ceil(before.shape[0] * STATUS_BAR_FRACTION))
+  before, after = before[top:], after[top:]
   delta = np.abs(before.astype(np.int16) - after.astype(np.int16))
   changed = (delta > PIXEL_CHANNEL_THRESHOLD).any(axis=-1)
   return float(changed.mean())

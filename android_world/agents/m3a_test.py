@@ -202,6 +202,23 @@ class CompactElementsTest(absltest.TestCase):
         '0: text="A"\n2: | clickable\n4: desc="D"\n',
     )
 
+  def test_compact_list_keeps_non_clickable_toggle_state(self):
+    # Settings rows often put the click handler on the parent; the Switch
+    # child has no text, is not clickable and alone carries the state.
+    elements = [
+        _element(text='Wi-Fi', is_clickable=True),
+        _element(is_checkable=True, is_checked=True),
+        _element(is_checkable=True),
+        _element(is_selected=True),
+    ]
+    self.assertEqual(
+        m3a._generate_ui_elements_description_list(
+            elements, (100, 100), compact=True
+        ),
+        '0: text="Wi-Fi" | clickable\n1: | checkable, checked\n'
+        '2: | checkable\n3: | selected\n',
+    )
+
   def test_default_list_keeps_original_format(self):
     elements = [_element(text='A'), _element()]
     self.assertEqual(

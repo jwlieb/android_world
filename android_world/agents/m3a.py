@@ -236,9 +236,9 @@ LEAN_SUMMARY_PROMPT_TEMPLATE = (
 
 # Used instead of an LLM summary when lean_summary finds the screen unchanged.
 SKIPPED_SUMMARY = (
-    'No visible change: the screen is identical after this action. That is'
-    ' expected for `answer` and `wait`; otherwise the action likely had no'
-    ' effect, so try something different.'
+    'No change detected: the UI elements and screenshot look the same after'
+    ' this action. That is expected for `answer` and `wait`; otherwise check'
+    ' the current screenshot before retrying, the action may not have worked.'
 )
 
 
@@ -303,6 +303,7 @@ _COMPACT_FLAGS = (
     ('is_focusable', 'focusable'),
     ('is_focused', 'focused'),
     ('is_selected', 'selected'),
+    ('is_checkable', 'checkable'),
     ('is_checked', 'checked'),
 )
 
@@ -330,9 +331,17 @@ def _generate_compact_ui_element_description(
 
 
 def _is_informative(ui_element: representation_utils.UIElement) -> bool:
-  """Whether an element carries text or can be interacted with."""
+  """Whether an element carries text, state, or can be interacted with.
+
+  Toggles (Switch/CheckBox) often have no text and are not clickable
+  themselves (the parent row is), yet carry the on/off state, so checkable,
+  checked and selected elements are kept.
+  """
   return bool(
-      ui_element.text
+      ui_element.is_checkable
+      or ui_element.is_checked
+      or ui_element.is_selected
+      or ui_element.text
       or ui_element.content_description
       or ui_element.hint_text
       or ui_element.tooltip

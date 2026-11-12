@@ -383,7 +383,9 @@ Each option can be benchmarked alone or combined. Both are off by default.
 `_is_informative`). The element list uses lines like
 `5: text="Save" desc="Save note" | clickable, checked`:
 - Only non-empty strings and true flags are listed.
-- Elements with no text that cannot be interacted with are left out.
+- Elements with no text that cannot be interacted with are left out. Toggle
+  children (checkable, checked or selected) are always kept, because they
+  carry the on/off state.
 - Indexes and the screenshot marks are unchanged.
 - A one-line format note (`COMPACT_ELEMENTS_NOTE`) tells the model how to
   read the lines.
@@ -394,9 +396,11 @@ Each option can be benchmarked alone or combined. Both are off by default.
 - **Hashing.** Each element gets a 64-bit hash (blake2b) of its content, not
   its position. Screens are compared as multisets of these hashes.
 - **Unchanged screen.** If the elements are the same, in the same positions,
-  and under 1% of pixels changed, the summary LLM call is skipped. A fixed "no
-  visible change" summary goes into the history instead, and
-  `summary_skipped` is set in the step data.
+  and under 0.1% of pixels changed (the status bar is ignored), the summary
+  LLM call is skipped. A fixed "no change detected" summary goes into the
+  history instead, and `summary_skipped` is set in the step data. The pixel
+  check catches changes the accessibility tree misses, such as drawing
+  strokes and WebView content.
 - **Changed screen.** The summary prompt has no `PROMPT_PREFIX` action list.
   Instead of the two full lists, it gets the elements that appeared, the
   elements that disappeared, and how many are unchanged. Both screenshots

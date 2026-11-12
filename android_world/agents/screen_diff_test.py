@@ -150,6 +150,22 @@ class ScreensUnchangedTest(absltest.TestCase):
     changed[0:20, 0:10] = 255  # 2% of pixels.
     self.assertFalse(self._unchanged(list(self.els), changed))
 
+  def test_small_change_outside_status_bar_counts(self):
+    # E.g. a drawn stroke or a WebView checkbox not in the a11y tree.
+    changed = self.pixels.copy()
+    changed[50:52, 0:10] = 255  # 0.2% of pixels, below the status bar.
+    self.assertFalse(self._unchanged(list(self.els), changed))
+
+  def test_status_bar_changes_are_ignored(self):
+    changed = self.pixels.copy()
+    changed[0:6, :] = 255  # Whole status bar (top 6%): clock, icons.
+    self.assertTrue(self._unchanged(list(self.els), changed))
+
+  def test_cursor_sized_change_is_ignored(self):
+    changed = self.pixels.copy()
+    changed[50:55, 50] = 255  # 5 px = 0.05%, like a blinking cursor.
+    self.assertTrue(self._unchanged(list(self.els), changed))
+
   def test_moved_element_counts(self):
     moved = [_el('A'), _el('B', box=(60, 70, 60, 70))]
     self.assertFalse(self._unchanged(moved, self.pixels.copy()))
