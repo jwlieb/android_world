@@ -14,6 +14,7 @@
 
 """A Multimodal Autonomous Agent for Android (M3A)."""
 
+import json
 import time
 
 from absl import logging
@@ -247,23 +248,92 @@ def _generate_ui_element_description(
   return element_description[:-2] + '}'
 
 
+COMPACT_ELEMENTS_NOTE = (
+    '(Format: index: text/desc/hint/tooltip, then after "|" the properties'
+    ' that are true; any property not listed is false. Elements with no text'
+    ' that cannot be interacted with are omitted.)\n'
+)
+
+# Flags listed by the compact encoding, in output order.
+_COMPACT_FLAGS = (
+    ('is_clickable', 'clickable'),
+    ('is_long_clickable', 'long_clickable'),
+    ('is_editable', 'editable'),
+    ('is_scrollable', 'scrollable'),
+    ('is_focusable', 'focusable'),
+    ('is_focused', 'focused'),
+    ('is_selected', 'selected'),
+    ('is_checked', 'checked'),
+)
+
+_COMPACT_FIELDS = (
+    ('text', 'text'),
+    ('content_description', 'desc'),
+    ('hint_text', 'hint'),
+    ('tooltip', 'tooltip'),
+)
+
+
+def _generate_compact_ui_element_description(
+    ui_element: representation_utils.UIElement, index: int
+) -> str:
+  """Token-lean description: only non-empty strings and true flags."""
+  parts = [f'{index}:']
+  for attr, key in _COMPACT_FIELDS:
+    value = getattr(ui_element, attr)
+    if value:
+      parts.append(f'{key}={json.dumps(value, ensure_ascii=False)}')
+  flags = [name for attr, name in _COMPACT_FLAGS if getattr(ui_element, attr)]
+  if flags:
+    parts.append('| ' + ', '.join(flags))
+  return ' '.join(parts)
+
+
+def _is_informative(ui_element: representation_utils.UIElement) -> bool:
+  """Whether an element carries text or can be interacted with."""
+  return bool(
+      ui_element.text
+      or ui_element.content_description
+      or ui_element.hint_text
+      or ui_element.tooltip
+      or ui_element.is_clickable
+      or ui_element.is_long_clickable
+      or ui_element.is_editable
+      or ui_element.is_scrollable
+  )
+
+
+def _describe_ui_element(
+    ui_element: representation_utils.UIElement, index: int, compact: bool
+) -> str:
+  if compact:
+    return _generate_compact_ui_element_description(ui_element, index)
+  return _generate_ui_element_description(ui_element, index)
+
+
 def _generate_ui_elements_description_list(
     ui_elements: list[representation_utils.UIElement],
     screen_width_height_px: tuple[int, int],
+    compact: bool = False,
 ) -> str:
   """Generate concise information for a list of UIElement.
 
   Args:
     ui_elements: UI elements for the current screen.
     screen_width_height_px: The height and width of the screen in pixels.
+    compact: Use the token-lean encoding and omit elements that have no text
+      and cannot be interacted with. Indexes are unchanged either way.
 
   Returns:
     Concise information for each UIElement.
   """
   tree_info = ''
   for index, ui_element in enumerate(ui_elements):
-    if m3a_utils.validate_ui_element(ui_element, screen_width_height_px):
-      tree_info += _generate_ui_element_description(ui_element, index) + '\n'
+    if not m3a_utils.validate_ui_element(ui_element, screen_width_height_px):
+      continue
+    if compact and not _is_informative(ui_element):
+      continue
+    tree_info += _describe_ui_element(ui_element, index, compact) + '\n'
   return tree_info
 
 
@@ -272,6 +342,7 @@ def _action_selection_prompt(
     history: list[str],
     ui_elements: str,
     additional_guidelines: list[str] | None = None,
+    elements_note: str = '',
 ) -> str:
   """Generate the prompt for the action selection.
 
@@ -298,7 +369,9 @@ def _action_selection_prompt(
   return ACTION_SELECTION_PROMPT_TEMPLATE.format(
       goal=goal,
       history=history,
-      ui_elements=ui_elements if ui_elements else 'Not available',
+      ui_elements=(
+          elements_note + ui_elements if ui_elements else 'Not available'
+      ),
       additional_guidelines=extra_guidelines,
   )
 
@@ -340,6 +413,7 @@ class M3A(base_agent.EnvironmentInteractingAgent):
       llm: infer.MultimodalLlmWrapper,
       name: str = 'M3A',
       wait_after_action_seconds: float = 2.0,
+      compact_ui_elements: bool = False,
   ):
     """Initializes a M3A Agent.
 
@@ -349,9 +423,13 @@ class M3A(base_agent.EnvironmentInteractingAgent):
       name: The agent name.
       wait_after_action_seconds: Seconds to wait for the screen to stablize
         after executing an action
+      compact_ui_elements: Describe UI elements with the token-lean encoding
+        (true flags only, uninformative elements omitted).
     """
     super().__init__(env, name)
     self.llm = llm
+    self.compact_ui_elements = compact_ui_elements
+    self._elements_note = COMPACT_ELEMENTS_NOTE if compact_ui_elements else ''
     self.history = []
     self.additional_guidelines = None
     self.wait_after_action_seconds = wait_after_action_seconds
@@ -390,7 +468,7 @@ class M3A(base_agent.EnvironmentInteractingAgent):
     before_ui_elements = state.ui_elements
     step_data['before_ui_elements'] = before_ui_elements
     before_ui_elements_list = _generate_ui_elements_description_list(
-        before_ui_elements, logical_screen_size
+        before_ui_elements, logical_screen_size, self.compact_ui_elements
     )
     step_data['raw_screenshot'] = state.pixels.copy()  # pyrefly: ignore[bad-assignment]
     before_screenshot = state.pixels.copy()
@@ -414,6 +492,7 @@ class M3A(base_agent.EnvironmentInteractingAgent):
         ],
         before_ui_elements_list,
         self.additional_guidelines,
+        self._elements_note,
     )
     step_data['action_prompt'] = action_prompt  # pyrefly: ignore[bad-assignment]
     action_output, is_safe, raw_response = self.llm.predict_mm(
@@ -545,7 +624,7 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
     physical_frame_boundary = self.env.physical_frame_boundary
     after_ui_elements = state.ui_elements
     after_ui_elements_list = _generate_ui_elements_description_list(
-        after_ui_elements, logical_screen_size
+        after_ui_elements, logical_screen_size, self.compact_ui_elements
     )
     after_screenshot = state.pixels.copy()
     for index, ui_element in enumerate(after_ui_elements):
@@ -569,7 +648,7 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
         action,
         reason,
         goal,
-        before_ui_elements_list,
+        self._elements_note + before_ui_elements_list,
         after_ui_elements_list,
     )
     summary, is_safe, raw_response = self.llm.predict_mm(
