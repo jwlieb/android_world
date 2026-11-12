@@ -528,18 +528,26 @@ def _history_lines(history: list[dict[str, Any]], window: int) -> list[str]:
   return lines
 
 
-def _parse_summary(output: str) -> str | None:
-  """The `Summary:` part of a merged action output, as one line."""
-  match = re.search(
-      r'Summary:(.*?)(Reason:|Action:|$)', output, flags=re.DOTALL
-  )
-  if not match:
-    return None
-  text = match.group(1)
-  if not match.group(2):
+def _split_merged_output(output: str) -> tuple[str | None, str]:
+  """Splits a merged output into (summary, the Reason/Action part).
+
+  The summary may quote an earlier action ("Action: {...}"), so it ends at the
+  LAST "Reason:" (or last "Action:" if there is no Reason), and only the text
+  after it is parsed for the action to run.
+  """
+  start = output.find('Summary:')
+  if start < 0:
+    return None, output
+  start += len('Summary:')
+  end = output.rfind('Reason:')
+  if end < start:
+    end = output.rfind('Action:')
+  if end < start:
     # No Reason/Action follows (malformed output): keep only the first line.
-    text = text.strip().split('\n', 1)[0]
-  return ' '.join(text.split()) or None
+    first, _, rest = output[start:].strip().partition('\n')
+    return ' '.join(first.split()) or None, rest
+  summary = ' '.join(output[start:end].split()) or None
+  return summary, output[end:]
 
 
 def _describe_changed_elements(
@@ -605,6 +613,8 @@ class M3A(base_agent.EnvironmentInteractingAgent):
       history_window: If > 0, only the last this-many steps keep their full
         summary in the action prompt; older steps show just their action.
     """
+    if history_window < 0:
+      raise ValueError('history_window must be >= 0 (0 keeps full history).')
     if merged_summary and lean_summary:
       raise ValueError(
           'merged_summary removes the summary call, so lean_summary does not'
@@ -709,14 +719,19 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
     step_data['action_output'] = action_output  # pyrefly: ignore[bad-assignment]
     step_data['action_raw_response'] = raw_response
 
+    reason_action_output = action_output
     if summarize_last:
       previous = self.history[-1]
-      summary = _parse_summary(action_output)
+      summary, reason_action_output = _split_merged_output(action_output)
       if summary:
         previous['summary'] = f'{previous["summary"]} {summary}'
       previous['summary_pending'] = False
+      # Episode data keeps a copy of each step, so also save the summary here.
+      step_data['previous_step_summary'] = summary
 
-    reason, action = m3a_utils.parse_reason_action_output(action_output)
+    reason, action = m3a_utils.parse_reason_action_output(
+        reason_action_output
+    )
 
     # If the output is not in the right format, add it to step summary which
     # will be passed to next step and return.
@@ -737,7 +752,6 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
     logging.info('Action: %s', action)
     logging.info('Reason: %s', reason)
     step_data['action_reason'] = reason  # pyrefly: ignore[bad-assignment]
-    step_data['action'] = action  # pyrefly: ignore[bad-assignment]
 
     try:
       converted_action = json_action.JSONAction(
@@ -791,6 +805,10 @@ Action: {{"action_type": "status", "goal_status": "infeasible"}}"""
           physical_frame_boundary,
           orientation,
       )
+
+    # Recorded only once the action is valid, so condensed history never
+    # shows a rejected action as performed.
+    step_data['action'] = action  # pyrefly: ignore[bad-assignment]
 
     if converted_action.action_type == 'status':
       if converted_action.goal_status == 'infeasible':

@@ -485,6 +485,30 @@ class MergedSummaryTest(absltest.TestCase):
     self.assertTrue(agent.history[0]['summary'].endswith(' It worked.'))
     self.assertIn('not in the correct format', agent.history[1]['summary'])
 
+  def test_action_in_summary_text_is_not_executed(self):
+    agent = self._agent([
+        _CLICK,
+        'Summary: Action: {"action_type": "click", "index": 0} opened it.'
+        ' Reason: was right.\nReason: wait now.\n'
+        'Action: {"action_type": "wait"}',
+    ])
+    agent.step('goal')
+    agent.step('goal')
+    self.assertEqual(agent.history[1]['action'], '{"action_type": "wait"}')
+    self.assertEqual(agent.history[1]['action_reason'], 'wait now.')
+    self.assertTrue(
+        agent.history[0]['summary'].endswith(
+            ' Action: {"action_type": "click", "index": 0} opened it.'
+            ' Reason: was right.'
+        )
+    )
+
+  def test_summary_is_also_saved_on_the_current_step(self):
+    agent = self._agent([_CLICK, 'Summary: It worked.\n' + _DONE])
+    agent.step('goal')
+    result = agent.step('goal')
+    self.assertEqual(result.data['previous_step_summary'], 'It worked.')
+
   def test_merged_and_lean_together_is_an_error(self):
     with self.assertRaises(ValueError):
       self._agent([], lean_summary=True)
@@ -538,6 +562,22 @@ class HistoryWindowTest(absltest.TestCase):
     self.assertEqual(
         m3a._history_lines(history, 1)[1], 'Step 1- (no action performed)'
     )
+
+  def test_negative_window_is_an_error(self):
+    with self.assertRaises(ValueError):
+      m3a.M3A(test_utils.FakeAsyncEnv(), None, history_window=-1)
+
+  def test_invalid_action_is_not_recorded_as_performed(self):
+    mock.patch.object(adb_utils, 'get_orientation', return_value=0).start()
+    mock.patch.object(
+        adb_utils, 'get_physical_frame_boundary', return_value=[0, 0, 100, 100]
+    ).start()
+    self.addCleanup(mock.patch.stopall)
+    env = test_utils.FakeAsyncEnv()  # No UI elements: index 0 out of range.
+    llm = MockMultimodalLlmWrapper([(_CLICK, 'raw')])
+    agent = m3a.M3A(env, llm, history_window=1)
+    agent.step('goal')
+    self.assertIsNone(agent.history[0]['action'])
 
   def test_agent_uses_window(self):
     mock.patch.object(adb_utils, 'get_orientation', return_value=0).start()
