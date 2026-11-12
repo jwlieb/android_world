@@ -160,6 +160,20 @@ _THINKING_LEVEL = flags.DEFINE_string(
     ' the model default.',
 )
 
+# M3A token-reduction options (off by default = the committed baseline).
+_M3A_COMPACT_ELEMENTS = flags.DEFINE_boolean(
+    'm3a_compact_elements',
+    False,
+    'M3A: describe UI elements compactly (true flags only, uninformative'
+    ' elements omitted).',
+)
+_M3A_LEAN_SUMMARY = flags.DEFINE_boolean(
+    'm3a_lean_summary',
+    False,
+    'M3A: skip the summary call when the screen is unchanged and otherwise'
+    ' send only the UI elements that changed, without the action prefix.',
+)
+
 # Benchmarking.
 _TASK_LIST_FILE = flags.DEFINE_string(
     'task_list_file',
@@ -247,6 +261,8 @@ def _run_config(agent: base_agent.EnvironmentInteractingAgent) -> dict:
       'temperature': getattr(llm, 'temperature', None),
       'llm_seed': getattr(llm, 'seed', None),
       'thinking_level': getattr(llm, 'thinking_level', None),
+      'm3a_compact_elements': _M3A_COMPACT_ELEMENTS.value,
+      'm3a_lean_summary': _M3A_LEAN_SUMMARY.value,
       'suite_family': _SUITE_FAMILY.value,
       'tasks': _task_names(),
       'task_list_file': _TASK_LIST_FILE.value,
@@ -255,6 +271,13 @@ def _run_config(agent: base_agent.EnvironmentInteractingAgent) -> dict:
       'fixed_task_seed': _FIXED_TASK_SEED.value,
       'command': ' '.join(sys.argv),
       'git': benchmark.git_info(os.path.dirname(os.path.abspath(__file__))),
+  }
+
+
+def _m3a_options() -> dict[str, bool]:
+  return {
+      'compact_ui_elements': _M3A_COMPACT_ELEMENTS.value,
+      'lean_summary': _M3A_LEAN_SUMMARY.value,
   }
 
 
@@ -271,14 +294,14 @@ def _get_agent(
     agent = random_agent.RandomAgent(env)
   # Gemini.
   elif _AGENT_NAME.value == 'm3a_gemini_gcp':
-    agent = m3a.M3A(env, _gemini_llm())
+    agent = m3a.M3A(env, _gemini_llm(), **_m3a_options())
   elif _AGENT_NAME.value == 't3a_gemini_gcp':
     agent = t3a.T3A(env, _gemini_llm())
   # GPT.
   elif _AGENT_NAME.value == 't3a_gpt4':
     agent = t3a.T3A(env, _gpt4_llm())
   elif _AGENT_NAME.value == 'm3a_gpt4v':
-    agent = m3a.M3A(env, _gpt4_llm())
+    agent = m3a.M3A(env, _gpt4_llm(), **_m3a_options())
   # SeeAct.
   elif _AGENT_NAME.value == 'seeact':
     agent = seeact.SeeAct(env)

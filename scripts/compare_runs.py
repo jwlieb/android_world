@@ -134,10 +134,16 @@ def main() -> None:
     git = cfg.get('git') or {}
     commit = (git.get('commit') or '?')[:8]
     dirty = ' (uncommitted changes)' if git.get('dirty') else ''
+    # Runs from before these options existed had them off.
+    options = [
+        name for name in ('m3a_compact_elements', 'm3a_lean_summary')
+        if cfg.get(name)
+    ]
     print(
         f'{label:8s}: {run_dir}\n          agent={cfg.get("agent_name")}'
         f' model={cfg.get("model")} seed={cfg.get("llm_seed")}'
         f' commit={commit}{dirty}'
+        f' options={",".join(options) or "none"}'
     )
   print()
 

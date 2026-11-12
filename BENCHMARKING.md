@@ -220,6 +220,11 @@ Flags added in this fork:
 | `--thinking_level` | unset | Gemini thinking level (`minimal`/`low`/`medium`/`high`) |
 | `--task_list_file` | unset | File of task names; combined with `--tasks` |
 | `--price_input_per_mtok`, `--price_output_per_mtok`, `--price_cached_input_per_mtok` | unset | If input and output prices are set, adds estimated USD cost columns |
+| `--m3a_compact_elements` | off | M3A token reduction #1, see §9.1 |
+| `--m3a_lean_summary` | off | M3A token reduction #2, see §9.1 |
+
+With both M3A options off (the default), the prompts are byte-for-byte the
+ones the baseline used.
 
 To benchmark a modified agent, either change M3A in place or add a new agent
 class and a new `--agent_name` branch in `run.py`'s `_get_agent()` (use
@@ -363,9 +368,63 @@ From `benchmark_calls.csv` of the baseline:
 - Tokens per call grow during an episode (the history grows and list screens
   have long element lists): roughly 5k at the start to 10k+ later.
 
-Obvious things to try (none tested yet): drop the duplicate raw screenshot,
-shrink or filter the UI element list, compress or cap the history, cheapen or
-skip the summary call, downscale screenshots.
+Measured split of a step's ~14.5k input tokens in the baseline: the UI element
+lists are about half. They take ~2.4k in the action call and ~5.0k in the
+summary call, because the summary call gets both the before and after lists.
+About 40% of those list characters are `"is_x": False` padding. Fixed
+instructions take ~2.4k in the action call and ~1.0k in the summary call, and
+four images take ~2.2k (~550 tokens each).
+
+### 9.1 Implemented reductions (behind flags)
+
+Each option can be benchmarked alone or combined. Both are off by default.
+
+**#1 `--m3a_compact_elements`** (`m3a.py`: `_generate_compact_ui_element_description`,
+`_is_informative`). The element list uses lines like
+`5: text="Save" desc="Save note" | clickable, checked`:
+- Only non-empty strings and true flags are listed.
+- Elements with no text that cannot be interacted with are left out.
+- Indexes and the screenshot marks are unchanged.
+- A one-line format note (`COMPACT_ELEMENTS_NOTE`) tells the model how to
+  read the lines.
+- It applies to every list the agent sends.
+
+**#2 `--m3a_lean_summary`** (`agents/screen_diff.py`, `m3a.py`:
+`LEAN_SUMMARY_PROMPT_TEMPLATE`, `SKIPPED_SUMMARY`).
+- **Hashing.** Each element gets a 64-bit hash (blake2b) of its content, not
+  its position. Screens are compared as multisets of these hashes.
+- **Unchanged screen.** If the elements are the same, in the same positions,
+  and under 1% of pixels changed, the summary LLM call is skipped. A fixed "no
+  visible change" summary goes into the history instead, and
+  `summary_skipped` is set in the step data.
+- **Changed screen.** The summary prompt has no `PROMPT_PREFIX` action list.
+  Instead of the two full lists, it gets the elements that appeared, the
+  elements that disappeared, and how many are unchanged. Both screenshots
+  are still sent.
+
+**Why exact hash sets, and what scales.**
+- All comparisons are per screen: each step compares one before/after pair
+  and keeps nothing. Cost depends on how many elements one screen has
+  (tens to a few hundred), never on episode length. Exact multisets are cheap
+  at that size.
+- Exact sets have no false positives. A Bloom filter's false positive here
+  would hide a changed element from the model.
+- `ScreenFingerprint` (with `digest()` and `similarity()`) is the one place to
+  swap in MinHash/LSH if a feature ever compares the current screen against
+  every earlier screen of a very long episode, e.g. loop detection.
+- The step history is the part that does **not** scale. It grows by about 70
+  tokens per step and is resent on every action call, so it becomes the next
+  target if long tasks are added.
+
+**Comparison runs.** Use the §5 command plus the option flag(s) and a
+descriptive `--checkpoint_dir`, for example `m3a_compact`, `m3a_lean`, or
+`m3a_compact_lean`.
+
+Not yet implemented:
+- merging the summary into the next action call (one call per step)
+- dropping the duplicate raw screenshot
+- downscaling screenshots
+- capping the history
 
 ---
 
