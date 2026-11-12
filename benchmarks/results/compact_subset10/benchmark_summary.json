@@ -1,0 +1,145 @@
+{
+  "started_at": "2026-11-12T00:31:53",
+  "updated_at": "2026-11-12T01:19:16",
+  "config": {
+    "agent_name": "m3a_gemini_gcp",
+    "model": "gemini-3.5-flash-lite",
+    "temperature": 0.0,
+    "llm_seed": 0,
+    "thinking_level": null,
+    "m3a_compact_elements": true,
+    "m3a_lean_summary": false,
+    "suite_family": "android_world",
+    "tasks": [
+      "ContactsAddContact",
+      "SystemWifiTurnOff",
+      "ExpenseDeleteSingle",
+      "MarkorCreateFolder",
+      "SimpleSmsSend",
+      "TasksHighPriorityTasksDueOnDate",
+      "ExpenseDeleteDuplicates",
+      "MarkorCreateNote",
+      "FilesDeleteFile",
+      "SimpleCalendarDeleteEventsOnRelativeDay"
+    ],
+    "task_list_file": "benchmarks/subset_10.txt",
+    "task_random_seed": 30,
+    "n_task_combinations": 2,
+    "fixed_task_seed": true,
+    "command": "run.py --agent_name=m3a_gemini_gcp --task_list_file=benchmarks/subset_10.txt --n_task_combinations=2 --fixed_task_seed --m3a_compact_elements --checkpoint_dir=/Users/aiden/android_world/runs/m3a_compact",
+    "git": {
+      "commit": "278fd90d1b46743a876ab1c3a8f96dea62113753",
+      "branch": "token-reduction",
+      "dirty": false,
+      "changed_files": []
+    }
+  },
+  "prices_per_mtok": null,
+  "totals": {
+    "episodes": 20,
+    "completed": 20,
+    "errors": 0,
+    "successes": 17,
+    "success_rate": 0.85,
+    "sum_input_tokens": 1477721,
+    "sum_output_tokens": 17931,
+    "sum_thinking_tokens": 0,
+    "sum_cached_tokens": 14209,
+    "sum_total_tokens": 1495652,
+    "mean_total_tokens": 74782.6,
+    "mean_total_tokens_success": 65986.70588235294,
+    "total_tokens_per_success": 87979.5294117647,
+    "mean_tokens_per_step": 8495.611554834055,
+    "mean_steps": 8.7,
+    "mean_steps_success": 7.764705882352941,
+    "mean_steps_over_optimal_success": 1.6941176470588235,
+    "llm_calls": 330,
+    "llm_failed_calls": 0,
+    "llm_retries": 0,
+    "sum_run_time_s": 1322.7343640327454,
+    "mean_run_time_s": 66.13671820163727,
+    "sum_llm_time_s": 520.5942449569702
+  },
+  "per_task": {
+    "ContactsAddContact": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 60385.0,
+      "mean_steps": 7.0,
+      "mean_run_time_s": 68.81020414829254
+    },
+    "ExpenseDeleteDuplicates": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 55124.0,
+      "mean_steps": 7.0,
+      "mean_run_time_s": 52.11949336528778
+    },
+    "ExpenseDeleteSingle": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 36224.0,
+      "mean_steps": 5.0,
+      "mean_run_time_s": 33.556715965270996
+    },
+    "FilesDeleteFile": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 0.5,
+      "mean_total_tokens": 178956.0,
+      "mean_steps": 20.0,
+      "mean_run_time_s": 143.40733349323273
+    },
+    "MarkorCreateFolder": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 60254.0,
+      "mean_steps": 6.5,
+      "mean_run_time_s": 46.47297549247742
+    },
+    "MarkorCreateNote": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 64529.0,
+      "mean_steps": 7.0,
+      "mean_run_time_s": 50.91519844532013
+    },
+    "SimpleCalendarDeleteEventsOnRelativeDay": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 74869.5,
+      "mean_steps": 9.0,
+      "mean_run_time_s": 62.990835428237915
+    },
+    "SimpleSmsSend": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 65304.5,
+      "mean_steps": 7.5,
+      "mean_run_time_s": 72.61523258686066
+    },
+    "SystemWifiTurnOff": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 64987.5,
+      "mean_steps": 8.0,
+      "mean_run_time_s": 57.05422604084015
+    },
+    "TasksHighPriorityTasksDueOnDate": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 0.0,
+      "mean_total_tokens": 87192.5,
+      "mean_steps": 10.0,
+      "mean_run_time_s": 73.42496705055237
+    }
+  }
+}

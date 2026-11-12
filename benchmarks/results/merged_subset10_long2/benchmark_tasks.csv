@@ -1,0 +1,55 @@
+task,instance_id,seed,goal,success,error,error_message,run_time_s,difficulty,optimal_steps,tags,max_steps,steps,agent_done,hit_step_limit,init_s,episode_s,eval_s,mean_step_s,input_tokens,output_tokens,thinking_tokens,cached_tokens,total_tokens,llm_calls,llm_failed_calls,llm_retries,llm_time_s,num_images_sent,prompt_chars,models,non_llm_episode_s,tokens_per_step,steps_over_optimal
+ContactsAddContact,0,1155463587,Create a new contact for Hugo Pereira. Their number is +13920741751.,0.0,False,,70.11063122749329,easy,5,data_entry|parameterized,12,12,False,True,1.0797040462493896,67.83320784568787,1.1972579956054688,5.6138143340746565,82941,1074,0,0,84015,12,0,0,18.185794830322266,24,200756,gemini-3.5-flash-lite,49.6474130153656,7001.25,2.4
+ContactsAddContact,1,1155463587,Create a new contact for Hugo Pereira. Their number is +13920741751.,0.0,False,,67.82030701637268,easy,5,data_entry|parameterized,12,12,False,True,0.584801197052002,66.04507899284363,1.1901969909667969,5.490892906983693,82845,1054,0,0,83899,12,0,0,16.943742036819458,24,200393,gemini-3.5-flash-lite,49.10133695602417,6991.583333333333,2.4
+ExpenseAddMultiple,0,3130695708,"Add the following expenses into the pro expense:
+Expense: Social Club Dues
+ amount_dollars: $67.41
+ category_name: Social
+ note: Monthly recurring
+
+Expense: Legal Fees
+ amount_dollars: $10.14
+ category_name: Others
+ note: Monthly recurring
+
+Expense: Stationery
+ amount_dollars: $118.93
+ category_name: Others
+ note: Remember to transfer funds
+",1.0,False,,145.34745502471924,medium,20,data_entry|parameterized,60,24,True,False,2.575000047683716,142.61931085586548,0.152850866317749,5.933042546113332,189912,2264,0,0,192176,24,0,0,49.80039143562317,48,480300,gemini-3.5-flash-lite,92.81891942024232,8007.333333333333,1.2
+ExpenseAddMultiple,1,3130695708,"Add the following expenses into the pro expense:
+Expense: Social Club Dues
+ amount_dollars: $67.41
+ category_name: Social
+ note: Monthly recurring
+
+Expense: Legal Fees
+ amount_dollars: $10.14
+ category_name: Others
+ note: Monthly recurring
+
+Expense: Stationery
+ amount_dollars: $118.93
+ category_name: Others
+ note: Remember to transfer funds
+",1.0,False,,140.03058099746704,medium,20,data_entry|parameterized,60,25,True,False,2.578382968902588,137.27259278297424,0.1794087886810302,5.44244384765625,200280,2416,0,0,202696,25,0,0,40.42366051673889,50,507601,gemini-3.5-flash-lite,96.84893226623537,8107.84,1.25
+ExpenseDeleteDuplicates,0,3926414058,"Delete all but one of any expenses in pro expense that are exact duplicates, ensuring at least one instance of each unique expense remains.",1.0,False,,40.91897916793823,medium,6,data_edit|parameterized,12,8,True,False,3.1979119777679443,37.54553079605103,0.175173282623291,4.66565215587616,47974,694,0,0,48668,8,0,0,11.84541082382202,16,110733,gemini-3.5-flash-lite,25.700119972229004,6083.5,1.3333333333333333
+ExpenseDeleteDuplicates,1,3926414058,"Delete all but one of any expenses in pro expense that are exact duplicates, ensuring at least one instance of each unique expense remains.",1.0,False,,44.02843499183655,medium,6,data_edit|parameterized,12,8,True,False,2.495468854904175,41.369675159454346,0.1631281375885009,5.024870812892914,47974,694,0,22390,48668,8,0,0,13.46240258216858,16,110733,gemini-3.5-flash-lite,27.907272577285767,6083.5,1.3333333333333333
+ExpenseDeleteSingle,0,3877511133,Delete the following expenses from pro expense: Rental Income.,1.0,False,,28.35632395744324,easy,3,screen_reading|parameterized,10,5,True,False,2.133672952651977,26.044682025909424,0.1778151988983154,4.972639083862305,25323,400,0,0,25723,5,0,0,8.197021245956421,10,55642,gemini-3.5-flash-lite,17.847660779953003,5144.6,1.6666666666666667
+ExpenseDeleteSingle,1,3877511133,Delete the following expenses from pro expense: Rental Income.,1.0,False,,24.58570694923401,easy,3,screen_reading|parameterized,10,5,True,False,2.24639892578125,22.17493796348572,0.1641750335693359,4.3965967178344725,25283,426,0,0,25709,5,0,0,6.841008901596069,10,55507,gemini-3.5-flash-lite,15.333929061889648,5141.8,1.6666666666666667
+FilesDeleteFile,0,1206130099,Delete the file q2a8_fancy_banana.mp3 from the Android filesystem located in the Notifications folder within the sdk_gphone_x86_64 storage area.,1.0,False,,81.72401309013367,medium,4,data_edit|parameterized,22,15,True,False,2.932321071624756,78.73886799812317,0.0525741577148437,5.171833038330078,87359,1556,0,0,88915,15,0,0,23.18166160583496,30,204317,gemini-3.5-flash-lite,55.55720639228821,5927.666666666667,3.75
+FilesDeleteFile,1,1206130099,Delete the file q2a8_fancy_banana.mp3 from the Android filesystem located in the Notifications folder within the sdk_gphone_x86_64 storage area.,1.0,False,,54.74577212333679,medium,4,data_edit|parameterized,22,10,True,False,2.931671142578125,51.74776601791382,0.0658252239227294,5.054661083221435,59271,1046,0,0,60317,10,0,0,16.11869192123413,20,136531,gemini-3.5-flash-lite,35.62907409667969,6031.7,2.5
+MarkorCreateFolder,0,3163095783,Create a new folder in Markor named folder_20261112_023058.,1.0,False,,26.587389945983887,easy,4,data_entry|parameterized,10,5,True,False,1.4633691310882568,24.9978301525116,0.1260180473327636,4.963368701934814,36271,485,0,0,36756,5,0,0,7.9119861125946045,10,87657,gemini-3.5-flash-lite,17.085844039916992,7351.2,1.25
+MarkorCreateFolder,1,3163095783,Create a new folder in Markor named folder_20261112_023058.,1.0,False,,26.682488203048703,easy,4,data_entry|parameterized,10,5,True,False,1.3454031944274902,25.272917985916138,0.0639650821685791,4.823470735549927,36271,485,0,20379,36756,5,0,0,7.510881185531616,10,87657,gemini-3.5-flash-lite,17.76203680038452,7351.2,1.25
+MarkorCreateNote,0,1448135622,Create a new note in Markor named 2023_01_26_wise_yacht.md with the following text: Ignorance is bliss.,1.0,False,,39.71912097930908,medium,8,data_entry|parameterized,16,7,True,False,2.0526010990142822,37.59180998802185,0.0745222568511962,5.351526464734759,52145,587,0,0,52732,7,0,0,12.575319051742554,14,127399,gemini-3.5-flash-lite,25.016490936279297,7533.142857142857,0.875
+MarkorCreateNote,1,1448135622,Create a new note in Markor named 2023_01_26_wise_yacht.md with the following text: Ignorance is bliss.,1.0,False,,39.39338803291321,medium,8,data_entry|parameterized,16,7,True,False,1.6812727451324463,37.61853218078613,0.0934152603149414,5.207354409354074,52193,609,0,2033,52802,7,0,0,11.323944091796877,14,127569,gemini-3.5-flash-lite,26.29458808898925,7543.142857142857,0.875
+SimpleCalendarDeleteEventsOnRelativeDay,0,3185280973,"In Simple Calendar Pro, delete all events scheduled for this Monday.",1.0,False,,48.14198708534241,medium,6,data_edit|parameterized,12,9,True,False,2.2701408863067627,45.71123600006104,0.1604421138763427,4.948023796081543,62439,803,0,0,63242,9,0,0,13.546619415283203,18,149601,gemini-3.5-flash-lite,32.16461658477783,7026.888888888889,1.5
+SimpleCalendarDeleteEventsOnRelativeDay,1,3185280973,"In Simple Calendar Pro, delete all events scheduled for this Monday.",1.0,False,,45.64623403549194,medium,6,data_edit|parameterized,12,9,True,False,2.305746078491211,43.183547019958496,0.1567978858947754,4.66923287179735,57147,740,0,0,57887,9,0,0,13.558809280395508,18,134647,gemini-3.5-flash-lite,29.62473773956299,6431.888888888889,1.5
+SimpleSmsSend,0,4209246460,Send a text message using Simple SMS Messenger to +16597910719 with message: Beauty is in the eye of the beholder.,1.0,False,,50.81446385383606,medium,6,parameterized,12,7,True,False,6.93762993812561,37.64359188079834,6.231828927993774,5.209792784282139,49459,648,0,0,50107,7,0,0,10.95371961593628,14,120188,gemini-3.5-flash-lite,26.68987226486206,7158.142857142857,1.1666666666666667
+SimpleSmsSend,1,4209246460,Send a text message using Simple SMS Messenger to +16597910719 with message: Beauty is in the eye of the beholder.,1.0,False,,50.73940706253052,medium,6,parameterized,12,7,True,False,6.612496852874756,37.90025615692139,6.224919080734253,5.242003815514701,49455,629,0,16293,50084,7,0,0,10.403571844100952,14,120166,gemini-3.5-flash-lite,27.496684312820435,7154.857142857143,1.1666666666666667
+SystemWifiTurnOff,0,2760691905,Turn wifi off.,1.0,False,,36.50760173797608,easy,3,screen_reading,10,7,True,False,0.4776456356048584,35.9802029132843,0.0495500564575195,4.974988222122192,40759,810,0,0,41569,7,0,0,12.19843316078186,14,94411,gemini-3.5-flash-lite,23.78176975250244,5938.428571428572,2.333333333333333
+SystemWifiTurnOff,1,2760691905,Turn wifi off.,1.0,False,,39.66320610046387,easy,3,screen_reading,10,6,True,False,0.4310860633850097,39.186720848083496,0.0452227592468261,6.50132433573405,33988,446,0,0,34434,6,0,0,18.678361654281616,12,77800,gemini-3.5-flash-lite,20.50835919380188,5739.0,2.0
+TasksHighPriorityTasksDueOnDate,0,2278904713,"Which tasks with high priority are due October 18 2023 in the Tasks app? Answer with the title only. If there are multiples titles, format your answer in a comma separated list.",0.0,False,,19.982646942138672,medium,5,information_retrieval|screen_reading|parameterized,10,4,True,False,1.189540147781372,18.791976928710938,0.0008320808410644,4.410885572433472,24650,386,0,0,25036,4,0,0,6.519040822982788,8,57545,gemini-3.5-flash-lite,12.27293610572815,6259.0,0.8
+TasksHighPriorityTasksDueOnDate,1,2278904713,"Which tasks with high priority are due October 18 2023 in the Tasks app? Answer with the title only. If there are multiples titles, format your answer in a comma separated list.",0.0,False,,54.13974595069885,medium,5,information_retrieval|screen_reading|parameterized,10,10,False,True,1.2888131141662598,52.85049891471863,0.0001499652862548,5.168804097175598,61515,1020,0,6107,62535,10,0,0,17.041549921035767,20,145247,gemini-3.5-flash-lite,35.80894899368286,6253.5,2.0
+SimpleCalendarAddOneEventRelativeDay,0,3130305423,"In Simple Calendar Pro, create a calendar event for this Thursday at 5h with the title 'Call with the Team' and the description 'We will celebrate team roles.'. The event should last for 60 mins.",0.0,False,,89.33756899833679,easy,17,data_entry|parameterized,34,17,True,False,3.268644094467163,85.89805102348328,0.1703701019287109,5.034398317337036,118164,1833,0,2033,119997,17,0,0,26.66363859176636,34,286356,gemini-3.5-flash-lite,59.23441243171692,7058.64705882353,1.0
+SimpleCalendarAddOneEventRelativeDay,1,3130305423,"In Simple Calendar Pro, create a calendar event for this Thursday at 5h with the title 'Call with the Team' and the description 'We will celebrate team roles.'. The event should last for 60 mins.",0.0,False,,68.42816996574402,easy,17,data_entry|parameterized,34,13,True,False,2.303948163986206,65.95697212219238,0.1669628620147705,5.061810328410222,89494,1345,0,0,90839,13,0,0,20.24456262588501,26,215964,gemini-3.5-flash-lite,45.71240949630737,6987.615384615385,0.7647058823529411

@@ -309,6 +309,22 @@ gRPC bug (§9) were rerun after the fix in the same run directory;
 `FilesDeleteFile` and `SimpleCalendarDeleteEventsOnRelativeDay` come from a
 separate run with the same flags that replaced the two hard tasks.
 
+### 7.1 Long-task baseline
+
+Files: **`benchmarks/baselines/m3a_flashlite_long2/`**, the tasks in
+`benchmarks/subset_long.txt`. Same agent and flags as above; run 2026-11-12.
+
+| Task | Success | Steps | Total tokens | Input tokens per step |
+|---|---|---|---|---|
+| ExpenseAddMultiple (60-step budget) | ✅ / ❌ | 25 / 25 | 435k / 435k | 17.3k |
+| SimpleCalendarAddOneEventRelativeDay (34-step budget) | ❌ / ❌ | 18.5 avg | 279k avg | 14.9k |
+
+Totals: 1/4 successes, 16.3k input tokens per step, 357k tokens per episode.
+
+The SimpleCalendar task was added with `--tasks` into the same run directory,
+and RecipeAddMultipleRecipes rows were removed because the app setup always
+fails here (§10). Both changes are recorded in `config.assembled_from`.
+
 You can compare against these files directly. If your machine differs a lot
 (e.g. Intel instead of Apple Silicon, different emulator image), consider
 running your own baseline first with the unmodified agent and the command in
@@ -444,6 +460,49 @@ descriptive `--checkpoint_dir`, for example `m3a_compact`, `m3a_lean`, or
 - It only matters once an episode runs longer than N steps. Use it on the
   long tasks (`benchmarks/subset_long.txt`) with `--m3a_history_window=5`.
 
+### 9.2 Results (2026-11-12)
+
+Each option was run alone with the §5 flags. The files are in
+`benchmarks/results/<name>/`. Input tokens per step is the reliable measure;
+success over 20 (or 4) episodes is noisy (§8).
+
+**10-task subset** (vs `m3a_flashlite_subset10`):
+
+| Run | Success | Input tokens per step | Tokens per episode | Calls per step |
+|---|---|---|---|---|
+| Baseline | 13/20 | 13,779 | 134.7k | 1.91 |
+| A `--m3a_compact_elements` | 17/20 | 8,493 (−38%) | 74.8k (−44%) | 1.90 |
+| B `--m3a_lean_summary` | 17/20 | 10,570 (−23%) | 86.5k (−36%) | 1.82 |
+| C `--m3a_merged_summary` | 16/20 | 6,426 (−53%) | 51.5k (−62%) | 1.00 |
+
+**Long tasks** (vs `m3a_flashlite_long2`):
+
+| Run | Success | Input tokens per step | Tokens per episode | Steps per episode |
+|---|---|---|---|---|
+| Baseline | 1/4 | 16,302 | 357k | 21.8 |
+| A compact | 1/4 | 9,531 (−42%) | 200k (−44%) | 20.8 |
+| B lean | 0/4 | 11,571 (−29%) | 359k (0%) | 30.8 |
+| C merged | 2/4 | 7,568 (−54%) | 151k (−58%) | 19.8 |
+| `--m3a_history_window=5` | 1/4 | 16,089 (−1%) | 320k (−10%) | 19.8 |
+
+Notes:
+- **C saves the most and kept success.**
+  - It scored 16/20 vs 13/20 on the subset, and 2/2 on ExpenseAddMultiple vs
+    1/2.
+  - It failed ContactsAddContact on both repeats (the baseline solved it once).
+- **A cut tokens on every task.** Its savings grow on longer screens.
+- **B's per-step saving did not survive on the long tasks.** One
+  ExpenseAddMultiple episode wandered for 51 steps, so its total per episode
+  matched the baseline.
+- **History compression barely matters at 17–25 steps.**
+  - History is ~70 tokens per step, so at step 20 it is ~1.4k of a ~16k
+    prompt, and a window of 5 removes only part of that.
+  - The 10% total drop comes from fewer steps, not from smaller prompts.
+  - It should pay off only on episodes of 50+ steps, or together with A/C,
+    where history becomes a larger share of a smaller prompt.
+- **No combined run has been done yet.** A + C is the obvious candidate;
+  B cannot be combined with C.
+
 Not yet implemented:
 - dropping the duplicate raw screenshot
 - downscaling screenshots
@@ -462,9 +521,10 @@ Not yet implemented:
 - **Missing apps** look like agent failures (§3.4). If a task errors with
   `Failed to clear app data for package ...` or `.../databases does not exist`,
   the app isn't installed.
-- **Joplin / FTS4**: the conda SQLite lacks FTS4; Joplin tasks (some
-  information-retrieval tasks) won't work until that is fixed. Not needed for
-  the subset.
+- **Joplin / Recipe / FTS4**: the conda SQLite lacks FTS4. Joplin tasks (some
+  information-retrieval tasks) and the Recipe (Broccoli) tasks, e.g.
+  RecipeAddMultipleRecipes, fail during setup with `no such module: FTS4`
+  until that is fixed. Neither is used by either subset.
 - **Gemini 3 and temperature**: Google's Gemini 3 documentation (as we recall
   it — check the current docs) recommends temperature 1.0 and warns low values
   can cause looping. The baseline uses 0. Keep it at 0 for comparisons with

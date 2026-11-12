@@ -1,0 +1,35 @@
+task,instance_id,seed,goal,success,error,error_message,run_time_s,difficulty,optimal_steps,tags,max_steps,steps,agent_done,hit_step_limit,init_s,episode_s,eval_s,mean_step_s,input_tokens,output_tokens,thinking_tokens,cached_tokens,total_tokens,llm_calls,llm_failed_calls,llm_retries,llm_time_s,num_images_sent,prompt_chars,models,non_llm_episode_s,tokens_per_step,steps_over_optimal
+ExpenseAddMultiple,0,3130695708,"Add the following expenses into the pro expense:
+Expense: Social Club Dues
+ amount_dollars: $67.41
+ category_name: Social
+ note: Monthly recurring
+
+Expense: Legal Fees
+ amount_dollars: $10.14
+ category_name: Others
+ note: Monthly recurring
+
+Expense: Stationery
+ amount_dollars: $118.93
+ category_name: Others
+ note: Remember to transfer funds
+",1.0,False,,198.7745180130005,medium,20,data_entry|parameterized,60,25,True,False,6.4043731689453125,192.21183586120603,0.1577780246734619,7.6671653175354,432751,2600,0,0,435351,49,0,0,79.68295192718506,98,1059735,gemini-3.5-flash-lite,112.528883934021,17414.04,1.25
+ExpenseAddMultiple,1,3130695708,"Add the following expenses into the pro expense:
+Expense: Social Club Dues
+ amount_dollars: $67.41
+ category_name: Social
+ note: Monthly recurring
+
+Expense: Legal Fees
+ amount_dollars: $10.14
+ category_name: Others
+ note: Monthly recurring
+
+Expense: Stationery
+ amount_dollars: $118.93
+ category_name: Others
+ note: Remember to transfer funds
+",0.0,False,,201.45102715492249,medium,20,data_entry|parameterized,60,25,True,False,3.0882720947265625,198.17632675170896,0.1861448287963867,7.920147695541382,432614,2699,0,0,435313,49,0,0,81.76131939888,98,1058869,gemini-3.5-flash-lite,116.41500735282898,17412.52,1.25
+SimpleCalendarAddOneEventRelativeDay,0,3130305423,"In Simple Calendar Pro, create a calendar event for this Thursday at 5h with the title 'Call with the Team' and the description 'We will celebrate team roles.'. The event should last for 60 mins.",0.0,False,,112.99367809295654,easy,17,data_entry|parameterized,34,16,True,False,3.3848671913146973,109.45503902435304,0.1534969806671142,6.750603035092354,240637,1850,0,0,242487,31,0,0,48.72491693496704,62,570242,gemini-3.5-flash-lite,60.73012208938599,15155.4375,0.9411764705882352
+SimpleCalendarAddOneEventRelativeDay,1,3130305423,"In Simple Calendar Pro, create a calendar event for this Thursday at 5h with the title 'Call with the Team' and the description 'We will celebrate team roles.'. The event should last for 60 mins.",0.0,False,,140.2910897731781,easy,17,data_entry|parameterized,34,21,True,False,2.5688979625701904,137.55459785461426,0.1672751903533935,6.492163635435558,312266,2282,0,2033,314548,41,0,0,58.702332735061646,82,735360,gemini-3.5-flash-lite,78.85226511955261,14978.47619047619,1.2352941176470589

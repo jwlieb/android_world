@@ -1,0 +1,166 @@
+{
+  "started_at": "2026-11-12T02:30:59",
+  "updated_at": "2026-11-12T03:22:48",
+  "config": {
+    "agent_name": "m3a_gemini_gcp",
+    "model": "gemini-3.5-flash-lite",
+    "temperature": 0.0,
+    "llm_seed": 0,
+    "thinking_level": null,
+    "m3a_compact_elements": false,
+    "m3a_lean_summary": false,
+    "m3a_merged_summary": true,
+    "m3a_history_window": 0,
+    "suite_family": "android_world",
+    "tasks": [
+      "ContactsAddContact",
+      "ExpenseAddMultiple",
+      "ExpenseDeleteDuplicates",
+      "ExpenseDeleteSingle",
+      "FilesDeleteFile",
+      "MarkorCreateFolder",
+      "MarkorCreateNote",
+      "SimpleCalendarAddOneEventRelativeDay",
+      "SimpleCalendarDeleteEventsOnRelativeDay",
+      "SimpleSmsSend",
+      "SystemWifiTurnOff",
+      "TasksHighPriorityTasksDueOnDate"
+    ],
+    "task_list_file": null,
+    "task_random_seed": 30,
+    "n_task_combinations": 2,
+    "fixed_task_seed": true,
+    "command": "run.py --agent_name=m3a_gemini_gcp --tasks=SimpleCalendarAddOneEventRelativeDay --n_task_combinations=2 --fixed_task_seed --m3a_merged_summary --checkpoint_dir=/Users/aiden/android_world/runs/m3a_merged",
+    "git": {
+      "commit": "de48955201389c00d5c91b7335eb5bac463aed4f",
+      "branch": "token-reduction",
+      "dirty": false,
+      "changed_files": []
+    },
+    "assembled_from": "Tasks run in two invocations (see commands in run logs); RecipeAddMultipleRecipes rows removed: every episode errored in setup (SQLite FTS4 missing). SimpleCalendarAddOneEventRelativeDay added with --tasks into the same directory."
+  },
+  "prices_per_mtok": null,
+  "totals": {
+    "episodes": 24,
+    "completed": 24,
+    "errors": 0,
+    "successes": 18,
+    "success_rate": 0.75,
+    "sum_input_tokens": 1613112,
+    "sum_output_tokens": 22450,
+    "sum_thinking_tokens": 0,
+    "sum_cached_tokens": 69235,
+    "sum_total_tokens": 1635562,
+    "mean_total_tokens": 68148.41666666667,
+    "mean_total_tokens_success": 64957.833333333336,
+    "total_tokens_per_success": 90864.55555555556,
+    "mean_tokens_per_step": 6679.476160011014,
+    "mean_steps": 9.875,
+    "mean_steps_success": 9.38888888888889,
+    "mean_steps_over_optimal_success": 1.5898148148148148,
+    "llm_calls": 237,
+    "llm_failed_calls": 0,
+    "llm_retries": 0,
+    "sum_run_time_s": 1333.4516234397888,
+    "mean_run_time_s": 55.5604843099912,
+    "sum_llm_time_s": 394.13022327423096
+  },
+  "per_task": {
+    "ContactsAddContact": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 0.0,
+      "mean_total_tokens": 83957.0,
+      "mean_steps": 12.0,
+      "mean_run_time_s": 68.96546912193298
+    },
+    "ExpenseAddMultiple": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 197436.0,
+      "mean_steps": 24.5,
+      "mean_run_time_s": 142.68901801109314
+    },
+    "ExpenseDeleteDuplicates": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 48668.0,
+      "mean_steps": 8.0,
+      "mean_run_time_s": 42.47370707988739
+    },
+    "ExpenseDeleteSingle": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 25716.0,
+      "mean_steps": 5.0,
+      "mean_run_time_s": 26.471015453338623
+    },
+    "FilesDeleteFile": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 74616.0,
+      "mean_steps": 12.5,
+      "mean_run_time_s": 68.23489260673523
+    },
+    "MarkorCreateFolder": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 36756.0,
+      "mean_steps": 5.0,
+      "mean_run_time_s": 26.634939074516296
+    },
+    "MarkorCreateNote": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 52767.0,
+      "mean_steps": 7.0,
+      "mean_run_time_s": 39.556254506111145
+    },
+    "SimpleCalendarAddOneEventRelativeDay": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 0.0,
+      "mean_total_tokens": 105418.0,
+      "mean_steps": 15.0,
+      "mean_run_time_s": 78.8828694820404
+    },
+    "SimpleCalendarDeleteEventsOnRelativeDay": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 60564.5,
+      "mean_steps": 9.0,
+      "mean_run_time_s": 46.894110560417175
+    },
+    "SimpleSmsSend": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 50095.5,
+      "mean_steps": 7.0,
+      "mean_run_time_s": 50.77693545818329
+    },
+    "SystemWifiTurnOff": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 1.0,
+      "mean_total_tokens": 38001.5,
+      "mean_steps": 6.5,
+      "mean_run_time_s": 38.08540391921997
+    },
+    "TasksHighPriorityTasksDueOnDate": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 0.0,
+      "mean_total_tokens": 43785.5,
+      "mean_steps": 7.0,
+      "mean_run_time_s": 37.06119644641876
+    }
+  }
+}
