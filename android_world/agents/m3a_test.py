@@ -283,6 +283,95 @@ class M3AFlagsTest(absltest.TestCase):
     self.assertNotIn('UI element 0', summary_prompt)
     self.assertIn(m3a.COMPACT_ELEMENTS_NOTE, summary_prompt)
 
+  def _click_then_summary_llm(self):
+    return MockMultimodalLlmWrapper([
+        ('Reason: tap.\nAction: {"action_type": "click", "index": 0}', 'raw'),
+        ('lean summary', 'raw'),
+    ])
+
+  def test_lean_summary_skips_llm_when_screen_unchanged(self):
+    self._set_states(self.elements, list(self.elements))
+    llm = self._click_then_summary_llm()
+    agent = m3a.M3A(
+        self.env, llm, lean_summary=True, wait_after_action_seconds=0
+    )
+    result = agent.step('goal')
+    self.assertLen(llm.prompts, 1)  # Only the action call.
+    self.assertTrue(result.data['summary_skipped'])
+    self.assertIn(m3a.SKIPPED_SUMMARY, result.data['summary'])
+    self.assertIn('"action_type": "click"', result.data['summary'])
+
+  def test_default_summary_still_calls_llm_when_screen_unchanged(self):
+    self._set_states(self.elements, list(self.elements))
+    llm = self._click_then_summary_llm()
+    agent = m3a.M3A(self.env, llm, wait_after_action_seconds=0)
+    result = agent.step('goal')
+    self.assertLen(llm.prompts, 2)
+    self.assertFalse(result.data['summary_skipped'])
+
+  def test_lean_summary_calls_llm_when_pixels_change(self):
+    after_pixels = self.pixels.copy()
+    after_pixels[:, :50] = 255
+    self._set_states(
+        self.elements, list(self.elements), pixels=[self.pixels, after_pixels]
+    )
+    llm = self._click_then_summary_llm()
+    agent = m3a.M3A(
+        self.env, llm, lean_summary=True, wait_after_action_seconds=0
+    )
+    result = agent.step('goal')
+    self.assertLen(llm.prompts, 2)
+    self.assertIn('lean summary', result.data['summary'])
+    self.assertFalse(result.data['summary_skipped'])
+
+  def test_lean_summary_prompt_sends_diff_without_prefix(self):
+    after = [_element(text='Saved', is_clickable=True), _element(text='New')]
+    self.elements.append(_element(text='Kept'))
+    after.append(_element(text='Kept'))
+    self._set_states(self.elements, after)
+    llm = self._click_then_summary_llm()
+    agent = m3a.M3A(
+        self.env, llm, lean_summary=True, wait_after_action_seconds=0
+    )
+    agent.step('goal')
+    prompt = llm.prompts[1]
+    self.assertNotIn(m3a.PROMPT_PREFIX, prompt)
+    self.assertNotIn('Here is the list for the after screenshot', prompt)
+    appeared = prompt.split('appeared after the action')[1].split('disappeared')[0]
+    self.assertIn('UI element 0: {"index": 0, "text": "Saved"', appeared)
+    self.assertIn('"text": "New"', appeared)
+    self.assertNotIn('Kept', appeared)
+    disappeared = prompt.split('disappeared after the action')[1]
+    self.assertIn('"text": "Save"', disappeared)
+    self.assertIn('1 element(s) are unchanged', prompt)
+    self.assertIn('{"action_type": "click", "index": 0}', prompt)
+
+  def test_lean_summary_with_compact_uses_compact_diff(self):
+    after = [_element(text='Saved')]
+    self._set_states(self.elements, after)
+    llm = self._click_then_summary_llm()
+    agent = m3a.M3A(
+        self.env, llm, lean_summary=True, compact_ui_elements=True,
+        wait_after_action_seconds=0,
+    )
+    agent.step('goal')
+    prompt = llm.prompts[1]
+    self.assertIn('0: text="Saved"', prompt)
+    self.assertIn('0: text="Save" | clickable', prompt)
+    self.assertIn(m3a.COMPACT_ELEMENTS_NOTE, prompt)
+    self.assertNotIn('UI element 0', prompt)
+
+  def test_lean_summary_marks_empty_diff_sections(self):
+    after = list(self.elements) + [_element(text='Toast')]
+    self._set_states(self.elements, after)
+    llm = self._click_then_summary_llm()
+    agent = m3a.M3A(
+        self.env, llm, lean_summary=True, wait_after_action_seconds=0
+    )
+    agent.step('goal')
+    disappeared = llm.prompts[1].split('disappeared after the action')[1]
+    self.assertIn('None', disappeared.split('\n')[1])
+
 
 if __name__ == '__main__':
   absltest.main()
