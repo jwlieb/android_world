@@ -1,8 +1,11 @@
 # Two simple but long tasks, to show how token savings hold up on long
 # episodes (the step history grows with every step).
 # Use with: python run.py --task_list_file=benchmarks/subset_long.txt ...
-# Both are repetitive data entry in apps that work on this emulator, with a
-# 60-step budget (complexity 6).
+# Both are form entry in apps that work on this emulator.
 
-ExpenseAddMultiple        # medium, 20 optimal steps: add 3 expenses.
-RecipeAddMultipleRecipes  # medium, 34 optimal steps: add 3 recipes.
+ExpenseAddMultiple                    # medium, 20 optimal steps, 60-step budget: add 3 expenses.
+SimpleCalendarAddOneEventRelativeDay  # easy, 17 optimal steps, 34-step budget: add one event.
+
+# RecipeAddMultipleRecipes (34 optimal steps) was the first choice, but the
+# Recipe app's setup needs SQLite FTS4, which the conda env's Python lacks
+# (same issue as Joplin, see "Known issues"), so every episode errors.
