@@ -462,8 +462,8 @@ descriptive `--checkpoint_dir`, for example `m3a_compact`, `m3a_lean`, or
 
 ### 9.2 Results (2026-11-12)
 
-Each option was run alone with the §5 flags. The files are in
-`benchmarks/results/<name>/`. Input tokens per step is the reliable measure;
+Each option was run alone with the §5 flags, then A+B and A+C together
+(B and C cannot be combined). The files are in `benchmarks/results/<name>/`. Input tokens per step is the reliable measure;
 success over 20 (or 4) episodes is noisy (§8).
 
 **10-task subset** (vs `m3a_flashlite_subset10`):
@@ -474,6 +474,8 @@ success over 20 (or 4) episodes is noisy (§8).
 | A `--m3a_compact_elements` | 17/20 | 8,493 (−38%) | 74.8k (−44%) | 1.90 |
 | B `--m3a_lean_summary` | 17/20 | 10,570 (−23%) | 86.5k (−36%) | 1.82 |
 | C `--m3a_merged_summary` | 16/20 | 6,426 (−53%) | 51.5k (−62%) | 1.00 |
+| A+B | 18/20 | 7,159 (−48%) | 58.8k (−56%) | 1.78 |
+| A+C | 17/20 | 4,679 (−66%) | 36.3k (−73%) | 1.00 |
 
 **Long tasks** (vs `m3a_flashlite_long2`):
 
@@ -484,6 +486,8 @@ success over 20 (or 4) episodes is noisy (§8).
 | B lean | 0/4 | 11,571 (−29%) | 359k (0%) | 30.8 |
 | C merged | 2/4 | 7,568 (−54%) | 151k (−58%) | 19.8 |
 | `--m3a_history_window=5` | 1/4 | 16,089 (−1%) | 320k (−10%) | 19.8 |
+| A+B | 0/4 | 7,956 (−51%) | 274k (−23%) | 34.0 |
+| A+C | 2/4 | 5,605 (−66%) | 166k (−54%) | 29.0 |
 
 Notes:
 - **C saves the most and kept success.**
@@ -500,8 +504,18 @@ Notes:
   - The 10% total drop comes from fewer steps, not from smaller prompts.
   - It should pay off only on episodes of 50+ steps, or together with A/C,
     where history becomes a larger share of a smaller prompt.
-- **No combined run has been done yet.** A + C is the obvious candidate;
-  B cannot be combined with C.
+- **A+C is the best combination: −66% input tokens per step on both sets.**
+  - Success held: 17/20 on the subset (baseline 13/20) and 2/4 on the long
+    tasks (baseline 1/4; ExpenseAddMultiple 2/2).
+  - Both SimpleCalendarAddOneEventRelativeDay repeats used the full 34-step
+    budget, so its total per episode fell less (−29%).
+  - The savings roughly multiply: A shrinks the element lists, C removes the
+    second call.
+- **A+B has the best subset success (18/20) but repeats B's long-task
+  problem.** Its ExpenseAddMultiple episodes ran 60 and 43 steps (baseline
+  ~25), so the total per episode fell only 23% despite −51% per step.
+- History compression was left out of the combined runs, given its ~1%
+  effect at these lengths.
 
 Not yet implemented:
 - dropping the duplicate raw screenshot

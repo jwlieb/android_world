@@ -1,0 +1,75 @@
+{
+  "started_at": "2026-11-12T14:56:24",
+  "updated_at": "2026-11-12T15:11:11",
+  "config": {
+    "agent_name": "m3a_gemini_gcp",
+    "model": "gemini-3.5-flash-lite",
+    "temperature": 0.0,
+    "llm_seed": 0,
+    "thinking_level": null,
+    "m3a_compact_elements": true,
+    "m3a_lean_summary": true,
+    "m3a_merged_summary": false,
+    "m3a_history_window": 0,
+    "suite_family": "android_world",
+    "tasks": [
+      "ExpenseAddMultiple",
+      "SimpleCalendarAddOneEventRelativeDay"
+    ],
+    "task_list_file": "benchmarks/subset_long.txt",
+    "task_random_seed": 30,
+    "n_task_combinations": 2,
+    "fixed_task_seed": true,
+    "command": "run.py --agent_name=m3a_gemini_gcp --task_list_file=benchmarks/subset_long.txt --n_task_combinations=2 --fixed_task_seed --checkpoint_dir=/Users/aiden/android_world/runs/combo_ab_long --m3a_compact_elements --m3a_lean_summary",
+    "git": {
+      "commit": "f385970838085ac8d7d0fdb2f96165ead129216f",
+      "branch": "token-reduction",
+      "dirty": false,
+      "changed_files": []
+    }
+  },
+  "prices_per_mtok": null,
+  "totals": {
+    "episodes": 4,
+    "completed": 4,
+    "errors": 0,
+    "successes": 0,
+    "success_rate": 0.0,
+    "sum_input_tokens": 1082067,
+    "sum_output_tokens": 13283,
+    "sum_thinking_tokens": 0,
+    "sum_cached_tokens": 12196,
+    "sum_total_tokens": 1095350,
+    "mean_total_tokens": 273837.5,
+    "mean_total_tokens_success": null,
+    "total_tokens_per_success": null,
+    "mean_tokens_per_step": 8097.0900464546285,
+    "mean_steps": 34.0,
+    "mean_steps_success": null,
+    "mean_steps_over_optimal_success": null,
+    "llm_calls": 217,
+    "llm_failed_calls": 0,
+    "llm_retries": 0,
+    "sum_run_time_s": 871.6758534908295,
+    "mean_run_time_s": 217.91896337270737,
+    "sum_llm_time_s": 349.61485171318054
+  },
+  "per_task": {
+    "ExpenseAddMultiple": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 0.0,
+      "mean_total_tokens": 412198.0,
+      "mean_steps": 51.5,
+      "mean_run_time_s": 317.7789692878723
+    },
+    "SimpleCalendarAddOneEventRelativeDay": {
+      "episodes": 2,
+      "errors": 0,
+      "success_rate": 0.0,
+      "mean_total_tokens": 135477.0,
+      "mean_steps": 16.5,
+      "mean_run_time_s": 118.05895745754242
+    }
+  }
+}
